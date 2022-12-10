@@ -7,10 +7,15 @@ const flash = require('connect-flash');
 const ExpressError = require('./utils/ExpressError');
 const methodOverride = require('method-override');
 const { join } = require('path');
+const passport = require('passport');
+const LocalStrategy = require('passport-local');
+const User = require('./models/user');
 
 
 const campgrounds = require('./routes/campgrounds');
 const reviews = require('./routes/reviews');
+const user = require('./models/user');
+const { route } = require('./routes/campgrounds');
 
 mongoose.connect('mongodb://localhost:27017/yelp-camp', { 
 })
@@ -45,6 +50,15 @@ const sessionconfig = {
 app.use(session(sessionconfig))
 app.use(flash());
 
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+
 app.use((req, res, next) => {
     res.locals.success = req.flash('success');
     res.locals.error = req.flash('error');
@@ -55,6 +69,16 @@ app.use('/campgrounds', campgrounds);
 app.use('/campgrounds/:id/reviews', reviews);
 // when using params such as id in express route use express.Router({ mergeParams: true }) to pass params into the router params.
 
+app.get('/fakeUser', async (req, res) => {
+    const user = new User({ email: 'swr@gamil.com', username: 'swr' });
+    const newUser = await User.register(user, 'password');
+    res.send(newUser);
+});
+
+// GET /register -> FORM
+// POST /register -> create a user
+// Login route
+// Logout route
 
 app.get('/', (req, res) => {
     res.render('home');
